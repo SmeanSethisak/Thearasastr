@@ -37,11 +37,16 @@ function generateLevelBar(current: number, max: number = 200): string {
   const percentage = Math.min((current / max) * 100, 100);
   const filledBlocks = Math.round(percentage / 10);
   const emptyBlocks = 10 - filledBlocks;
-  return "█".repeat(Math.max(0, filledBlocks)) + "░".repeat(Math.max(0, emptyBlocks));
+  return (
+    "█".repeat(Math.max(0, filledBlocks)) + "░".repeat(Math.max(0, emptyBlocks))
+  );
 }
 
 // Get urgency indicator based on risk
-function getUrgencyBanner(riskStatus: "safe" | "warning" | "critical", alertType: string): string {
+function getUrgencyBanner(
+  riskStatus: "safe" | "warning" | "critical",
+  alertType: string
+): string {
   if (riskStatus === "critical") {
     return `
 🚨🚨🚨 <b>CRITICAL ALERT</b> 🚨🚨🚨
@@ -58,11 +63,16 @@ function getUrgencyBanner(riskStatus: "safe" | "warning" | "critical", alertType
 }
 
 // Get action recommendations based on alert type and severity
-function getRecommendations(riskStatus: "safe" | "warning" | "critical", alertType: string): string[] {
+function getRecommendations(
+  riskStatus: "safe" | "warning" | "critical",
+  alertType: string
+): string[] {
   const recommendations: string[] = [];
-  
+
   if (riskStatus === "critical") {
-    recommendations.push("🏃 Consider immediate evacuation if in flood-prone area");
+    recommendations.push(
+      "🏃 Consider immediate evacuation if in flood-prone area"
+    );
     recommendations.push("📞 Alert local emergency services if needed");
     recommendations.push("🔌 Secure electrical equipment");
   } else if (riskStatus === "warning") {
@@ -70,16 +80,16 @@ function getRecommendations(riskStatus: "safe" | "warning" | "critical", alertTy
     recommendations.push("📦 Prepare emergency supplies");
     recommendations.push("🚗 Plan evacuation routes");
   }
-  
+
   if (alertType.includes("Rapid")) {
     recommendations.push("⏰ Water rising quickly - act fast");
   }
-  
+
   if (alertType.includes("Low")) {
     recommendations.push("🔍 Check sensor functionality");
     recommendations.push("💧 Possible drought conditions");
   }
-  
+
   return recommendations;
 }
 
@@ -100,16 +110,26 @@ async function sendTelegramAlert(payload: AlertPayload): Promise<boolean> {
 
   const risk = riskConfig[payload.riskStatus];
   const levelBar = generateLevelBar(payload.currentLevel);
-  const speedIndicator = payload.risingSpeed >= 0 
-    ? `📈 +${payload.risingSpeed.toFixed(2)}` 
-    : `📉 ${payload.risingSpeed.toFixed(2)}`;
-  
-  const trendEmoji = payload.risingSpeed > 0.5 ? "⬆️⬆️" : 
-                     payload.risingSpeed > 0 ? "⬆️" :
-                     payload.risingSpeed < -0.5 ? "⬇️⬇️" :
-                     payload.risingSpeed < 0 ? "⬇️" : "➡️";
+  const speedIndicator =
+    payload.risingSpeed >= 0
+      ? `📈 +${payload.risingSpeed.toFixed(2)}`
+      : `📉 ${payload.risingSpeed.toFixed(2)}`;
 
-  const recommendations = getRecommendations(payload.riskStatus, payload.alertType);
+  const trendEmoji =
+    payload.risingSpeed > 0.5
+      ? "⬆️⬆️"
+      : payload.risingSpeed > 0
+      ? "⬆️"
+      : payload.risingSpeed < -0.5
+      ? "⬇️⬇️"
+      : payload.risingSpeed < 0
+      ? "⬇️"
+      : "➡️";
+
+  const recommendations = getRecommendations(
+    payload.riskStatus,
+    payload.alertType
+  );
   const urgencyBanner = getUrgencyBanner(payload.riskStatus, payload.alertType);
 
   const message = `
@@ -141,11 +161,15 @@ ${risk.color} <b>Status:</b> ${risk.label}
 <b>Message:</b> ${payload.message}
 ${payload.threshold ? `<b>Threshold:</b> ${payload.threshold} cm` : ""}
 
-${recommendations.length > 0 ? `━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${
+  recommendations.length > 0
+    ? `━━━━━━━━━━━━━━━━━━━━━━━━━━━
 <b>📋 RECOMMENDED ACTIONS</b>
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-${recommendations.map(r => `• ${r}`).join("\n")}` : ""}
+${recommendations.map((r) => `• ${r}`).join("\n")}`
+    : ""
+}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 <i>🌊 Smart Water Level Monitor</i>
@@ -254,9 +278,12 @@ export async function POST(request: NextRequest) {
           riskStatus,
           timestamp: latest.created_at,
           alertType: "🔺 High Water Level",
-          message: `Water level (${currentLevel.toFixed(1)}cm) exceeds safe threshold (${highThreshold}cm)`,
+          message: `Water level (${currentLevel.toFixed(
+            1
+          )}cm) exceeds safe threshold (${highThreshold}cm)`,
           threshold: highThreshold,
-          trend: changeRate > 0 ? "rising" : changeRate < 0 ? "falling" : "stable",
+          trend:
+            changeRate > 0 ? "rising" : changeRate < 0 ? "falling" : "stable",
         };
         await sendTelegramAlert(payload);
         sentAlerts.push(payload);
@@ -274,9 +301,12 @@ export async function POST(request: NextRequest) {
           riskStatus,
           timestamp: latest.created_at,
           alertType: "🔻 Low Water Level",
-          message: `Water level (${currentLevel.toFixed(1)}cm) dropped below minimum threshold (${lowThreshold}cm)`,
+          message: `Water level (${currentLevel.toFixed(
+            1
+          )}cm) dropped below minimum threshold (${lowThreshold}cm)`,
           threshold: lowThreshold,
-          trend: changeRate > 0 ? "rising" : changeRate < 0 ? "falling" : "stable",
+          trend:
+            changeRate > 0 ? "rising" : changeRate < 0 ? "falling" : "stable",
         };
         await sendTelegramAlert(payload);
         sentAlerts.push(payload);
@@ -294,7 +324,9 @@ export async function POST(request: NextRequest) {
           riskStatus,
           timestamp: latest.created_at,
           alertType: "⚡ Rapid Water Rise",
-          message: `Water rising rapidly at ${changeRate.toFixed(2)} cm/min - potential flood risk!`,
+          message: `Water rising rapidly at ${changeRate.toFixed(
+            2
+          )} cm/min - potential flood risk!`,
           trend: "rising",
         };
         await sendTelegramAlert(payload);
@@ -313,8 +345,10 @@ export async function POST(request: NextRequest) {
           riskStatus,
           timestamp: latest.created_at,
           alertType: "🚨 CRITICAL FLOOD RISK",
-          message: "IMMEDIATE ATTENTION REQUIRED! Critical flood conditions detected. Take protective action now!",
-          trend: changeRate > 0 ? "rising" : changeRate < 0 ? "falling" : "stable",
+          message:
+            "IMMEDIATE ATTENTION REQUIRED! Critical flood conditions detected. Take protective action now!",
+          trend:
+            changeRate > 0 ? "rising" : changeRate < 0 ? "falling" : "stable",
         };
         await sendTelegramAlert(payload);
         sentAlerts.push(payload);

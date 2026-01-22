@@ -29,17 +29,23 @@ interface ReportPayload {
 }
 
 // Generate a visual bar using Unicode blocks
-function generateBar(value: number, maxValue: number, barLength: number = 10): string {
+function generateBar(
+  value: number,
+  maxValue: number,
+  barLength: number = 10
+): string {
   const filledBlocks = Math.round((value / maxValue) * barLength);
   const emptyBlocks = barLength - filledBlocks;
-  return "█".repeat(Math.max(0, filledBlocks)) + "░".repeat(Math.max(0, emptyBlocks));
+  return (
+    "█".repeat(Math.max(0, filledBlocks)) + "░".repeat(Math.max(0, emptyBlocks))
+  );
 }
 
 // Get trend arrow based on change
 function getTrendArrow(current: number, average: number): string {
   const diff = current - average;
   const percentChange = (diff / average) * 100;
-  
+
   if (percentChange > 10) return "📈 ↑↑";
   if (percentChange > 5) return "📈 ↑";
   if (percentChange < -10) return "📉 ↓↓";
@@ -48,7 +54,11 @@ function getTrendArrow(current: number, average: number): string {
 }
 
 // Get risk level emoji and text
-function getRiskIndicator(level: number): { emoji: string; text: string; color: string } {
+function getRiskIndicator(level: number): {
+  emoji: string;
+  text: string;
+  color: string;
+} {
   if (level >= 180) return { emoji: "🔴", text: "CRITICAL", color: "🚨" };
   if (level >= 150) return { emoji: "🟠", text: "HIGH", color: "⚠️" };
   if (level >= 100) return { emoji: "🟡", text: "MODERATE", color: "⚡" };
@@ -89,10 +99,10 @@ export async function POST(request: NextRequest) {
     const lowAlerts = report.alerts.filter((a) => a.type === "low").length;
     const risk = getRiskIndicator(report.latest);
     const trend = getTrendArrow(report.latest, report.average);
-    
+
     // Calculate the max value for bar charts
     const maxLevel = Math.max(report.max, 200);
-    
+
     // Build time period mini chart
     const periods = [
       { label: "1h", value: report.timePeriodAverages.last1hour },
@@ -104,7 +114,11 @@ export async function POST(request: NextRequest) {
     const periodChart = periods
       .map((p) => {
         if (p.value <= 0) return `${p.label}: No data`;
-        return `${p.label}: ${generateBar(p.value, maxLevel, 8)} ${p.value.toFixed(1)}cm`;
+        return `${p.label}: ${generateBar(
+          p.value,
+          maxLevel,
+          8
+        )} ${p.value.toFixed(1)}cm`;
       })
       .join("\n");
 
@@ -135,10 +149,26 @@ ${risk.emoji} Risk Level: ${risk.text}
 ┌─────────┬──────────┬────────────┐
 │ Metric  │  Value   │    Bar     │
 ├─────────┼──────────┼────────────┤
-│ Maximum │ ${report.max.toFixed(1).padStart(6)}cm │ ${generateBar(report.max, maxLevel, 8)} │
-│ Average │ ${report.average.toFixed(1).padStart(6)}cm │ ${generateBar(report.average, maxLevel, 8)} │
-│ Minimum │ ${report.min.toFixed(1).padStart(6)}cm │ ${generateBar(report.min, maxLevel, 8)} │
-│ Current │ ${report.latest.toFixed(1).padStart(6)}cm │ ${generateBar(report.latest, maxLevel, 8)} │
+│ Maximum │ ${report.max.toFixed(1).padStart(6)}cm │ ${generateBar(
+      report.max,
+      maxLevel,
+      8
+    )} │
+│ Average │ ${report.average.toFixed(1).padStart(6)}cm │ ${generateBar(
+      report.average,
+      maxLevel,
+      8
+    )} │
+│ Minimum │ ${report.min.toFixed(1).padStart(6)}cm │ ${generateBar(
+      report.min,
+      maxLevel,
+      8
+    )} │
+│ Current │ ${report.latest.toFixed(1).padStart(6)}cm │ ${generateBar(
+      report.latest,
+      maxLevel,
+      8
+    )} │
 └─────────┴──────────┴────────────┘
 </pre>
 
@@ -161,9 +191,19 @@ ${
 🔵 Low Level Alerts: <b>${lowAlerts}</b>
 📊 Total: <b>${report.alerts.length}</b> alert(s)
 
-${report.alerts.slice(0, 3).map((alert) => 
-  `  ${alert.type === "high" ? "🔺" : "🔻"} ${alert.currentLevel.toFixed(1)}cm at ${new Date(alert.timestamp).toLocaleTimeString()}`
-).join("\n")}${report.alerts.length > 3 ? `\n  ... and ${report.alerts.length - 3} more` : ""}`
+${report.alerts
+  .slice(0, 3)
+  .map(
+    (alert) =>
+      `  ${alert.type === "high" ? "🔺" : "🔻"} ${alert.currentLevel.toFixed(
+        1
+      )}cm at ${new Date(alert.timestamp).toLocaleTimeString()}`
+  )
+  .join("\n")}${
+        report.alerts.length > 3
+          ? `\n  ... and ${report.alerts.length - 3} more`
+          : ""
+      }`
 }
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -213,7 +253,7 @@ ${report.alerts.slice(0, 3).map((alert) =>
             }),
           }
         );
-        
+
         if (photoResponse.ok) {
           photoResult = await photoResponse.json();
         }

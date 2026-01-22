@@ -3,133 +3,83 @@
 import { useState } from "react";
 import {
   useLatestReadings,
-  useDeviceTimeSeries,
   useDeviceStats,
   useAvailableDevices,
-  useTimePeriodAverages,
   useAnomalyDetection,
-  useGenerateReport,
   useFloodRiskPrediction,
   useWaterLevelChangeRate,
-  useSmartAlerts,
 } from "@/hooks/useWaterLevels";
-import { DEFAULT_ALERT_CONFIG } from "@/lib/types";
-import { SystemShell, MainGrid, SectionGrid } from "@/components/SystemShell";
-import { CommandHeader } from "@/components/CommandHeader";
+import { AppLayout, PageHeader, PageContent } from "@/components/AppLayout";
 import { StatsGrid } from "@/components/StatsGrid";
-import { TimeSeriesChart } from "@/components/TimeSeriesChart";
-import { LatestReadingsTable } from "@/components/LatestReadingsTable";
-import { WaterLevelAlerts, AlertBanner } from "@/components/WaterLevelAlerts";
-import { TimePeriodAveragesCard } from "@/components/TimePeriodAveragesCard";
-import { WaterLevelReportCard } from "@/components/WaterLevelReportCard";
 import { FloodRiskCard, FloodRiskBanner } from "@/components/FloodRiskCard";
 import { WaterLevelSpeedIndicator } from "@/components/WaterLevelSpeedIndicator";
-import DeviceControl from "@/components/DeviceControl";
+import { AlertBanner } from "@/components/WaterLevelAlerts";
 
 // Threshold constants
 const HIGH_THRESHOLD = 150;
 const LOW_THRESHOLD = 10;
 
-// Alert configuration
-const ALERT_CONFIG = {
-  ...DEFAULT_ALERT_CONFIG,
-  highThreshold: HIGH_THRESHOLD,
-  lowThreshold: LOW_THRESHOLD,
-  telegramEnabled: !!process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN,
-  telegramBotToken: process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN,
-  telegramChatId: process.env.NEXT_PUBLIC_TELEGRAM_CHAT_ID,
-};
-
-export default function Home() {
+export default function DashboardPage() {
   const { devices, loading: devicesLoading } = useAvailableDevices();
   const [selectedDevice, setSelectedDevice] = useState<string>("");
-  const [timeRange, setTimeRange] = useState<24 | 7 | 30>(24);
 
   // Set default device when devices load
   if (devices.length > 0 && !selectedDevice) {
     setSelectedDevice(devices[0]);
   }
 
-  // Fetch data for all views
-  const { data: latestReadings, loading: latestLoading } = useLatestReadings();
-  const { data: timeSeries, loading: timeSeriesLoading } = useDeviceTimeSeries(
-    selectedDevice,
-    timeRange
-  );
-  const [stats, statsLoading, statsError] = useDeviceStats(
-    selectedDevice,
-    timeRange
-  );
-
-  // Hooks for alerts, averages, and reports
-  const [timePeriodAverages, averagesLoading, averagesError] =
-    useTimePeriodAverages(selectedDevice);
-  const [alerts, alertsLoading, alertsError] = useAnomalyDetection(
-    selectedDevice,
-    HIGH_THRESHOLD,
-    LOW_THRESHOLD
-  );
-  const [report, reportLoading, reportError] = useGenerateReport(
-    selectedDevice,
-    24
-  );
-
-  // Hooks for flood risk prediction and water level speed
+  const [stats, statsLoading, statsError] = useDeviceStats(selectedDevice, 24);
   const [floodRisk, floodRiskLoading, floodRiskError] =
     useFloodRiskPrediction(selectedDevice);
   const [changeRate, changeRateLoading, changeRateError] =
     useWaterLevelChangeRate(selectedDevice);
-  const [smartAlerts, smartAlertsLoading] = useSmartAlerts(
+  const [alerts] = useAnomalyDetection(
     selectedDevice,
-    ALERT_CONFIG
+    HIGH_THRESHOLD,
+    LOW_THRESHOLD
   );
 
   return (
-    <SystemShell>
+    <AppLayout alertCount={alerts?.length || 0}>
       {/* Critical Alerts Banner */}
       <FloodRiskBanner prediction={floodRisk} loading={floodRiskLoading} />
-      <AlertBanner alerts={alerts} loading={alertsLoading} />
+      <AlertBanner alerts={alerts} loading={false} />
 
-      {/* Command Header */}
-      <CommandHeader
-        systemName="HYDRO-MON"
-        deviceCount={devices.length}
-        onlineCount={devices.length}
-        selectedDevice={selectedDevice}
-        onDeviceChange={setSelectedDevice}
-        devices={devices}
-        devicesLoading={devicesLoading}
+      <PageHeader
+        title="Dashboard"
+        description="Overview of water level monitoring system"
+        actions={
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-[var(--text-muted)]">Device:</span>
+            <select
+              value={selectedDevice}
+              onChange={(e) => setSelectedDevice(e.target.value)}
+              disabled={devicesLoading}
+              className="bg-[var(--bg-tertiary)] border border-[var(--border-primary)] text-[var(--text-primary)] text-sm rounded px-3 py-1.5 focus:outline-none focus:border-[var(--accent-primary)]"
+            >
+              {devicesLoading ? (
+                <option>Loading...</option>
+              ) : (
+                devices.map((device) => (
+                  <option key={device} value={device}>
+                    {device}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+        }
       />
 
-      {/* Main Grid Content */}
-      <MainGrid>
-        {/* Time Range Selector */}
-        <div className="mb-4 flex items-center gap-2">
-          <span className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider mr-2">
-            Time Range
-          </span>
-          {[
-            { value: 24, label: "24H" },
-            { value: 7, label: "7D" },
-            { value: 30, label: "30D" },
-          ].map((option) => (
-            <button
-              key={option.value}
-              onClick={() => setTimeRange(option.value as 24 | 7 | 30)}
-              className={`control-btn text-xs py-1.5 px-4 ${
-                timeRange === option.value ? "active" : ""
-              }`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Primary Metrics Row */}
-        <div className="mb-4">
+      <PageContent>
+        {/* Primary Metrics */}
+        <div className="mb-6">
+          <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4">
+            Current Statistics
+          </h2>
           <StatsGrid stats={stats} loading={statsLoading} />
           {statsError && (
-            <div className="mt-2 p-3 border border-[var(--status-critical)] bg-[var(--status-critical-bg)]">
+            <div className="mt-2 p-3 border border-[var(--status-critical)] bg-[var(--status-critical-bg)] rounded">
               <p className="text-[var(--status-critical)] text-xs font-mono">
                 ERROR: {statsError}
               </p>
@@ -137,187 +87,132 @@ export default function Home() {
           )}
         </div>
 
-        {/* Main Dashboard Grid - 3 columns on large screens */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          {/* Left Column - Telemetry & Monitoring (8 cols) */}
-          <div className="lg:col-span-8 space-y-4">
-            {/* Telemetry Chart */}
-            <TimeSeriesChart
-              data={timeSeries}
-              loading={timeSeriesLoading}
-              deviceId={selectedDevice || "—"}
-              highThreshold={HIGH_THRESHOLD}
-              lowThreshold={LOW_THRESHOLD}
+        {/* Risk Assessment Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div>
+            <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4">
+              Flood Risk Assessment
+            </h2>
+            <FloodRiskCard
+              prediction={floodRisk}
+              loading={floodRiskLoading}
+              error={floodRiskError}
             />
-
-            {/* Risk Assessment & Rate Monitor Row */}
-            <SectionGrid cols={2}>
-              <FloodRiskCard
-                prediction={floodRisk}
-                loading={floodRiskLoading}
-                error={floodRiskError}
-              />
-              <WaterLevelSpeedIndicator
-                changeRate={changeRate}
-                loading={changeRateLoading}
-                error={changeRateError}
-              />
-            </SectionGrid>
-
-            {/* Alerts & Time Period Analysis Row */}
-            <SectionGrid cols={2}>
-              <WaterLevelAlerts
-                alerts={alerts}
-                loading={alertsLoading}
-                error={alertsError}
-                highThreshold={HIGH_THRESHOLD}
-                lowThreshold={LOW_THRESHOLD}
-              />
-              <TimePeriodAveragesCard
-                averages={timePeriodAverages}
-                loading={averagesLoading}
-                error={averagesError}
-              />
-            </SectionGrid>
           </div>
-
-          {/* Right Column - Control & Logs (4 cols) */}
-          <div className="lg:col-span-4 space-y-4">
-            {/* System Control Panel */}
-            <DeviceControl
-              currentWaterLevel={stats?.latest}
-              highThreshold={HIGH_THRESHOLD}
-              lowThreshold={LOW_THRESHOLD}
-            />
-
-            {/* System Log - Latest Readings */}
-            <LatestReadingsTable
-              readings={latestReadings}
-              loading={latestLoading}
-            />
-
-            {/* Report Generator */}
-            <WaterLevelReportCard
-              report={report}
-              loading={reportLoading}
-              error={reportError}
+          <div>
+            <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4">
+              Water Level Change Rate
+            </h2>
+            <WaterLevelSpeedIndicator
+              changeRate={changeRate}
+              loading={changeRateLoading}
+              error={changeRateError}
             />
           </div>
         </div>
 
-        {/* Smart Alerts Panel - Full Width */}
-        {smartAlerts.length > 0 && (
-          <div className="mt-4 panel">
-            <div className="panel-header flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="status-dot critical" />
-                <span>SMART ALERT NOTIFICATIONS</span>
-              </div>
-              <span className="text-[var(--text-muted)] font-mono text-[10px]">
-                {smartAlerts.length} ACTIVE
-              </span>
-            </div>
-            <div className="p-4">
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                {smartAlerts.map((alert) => (
-                  <div
-                    key={alert.id}
-                    className="border-l-2 p-3"
-                    style={{
-                      borderLeftColor:
-                        alert.severity === "critical"
-                          ? "var(--status-critical)"
-                          : "var(--status-warning)",
-                      backgroundColor:
-                        alert.severity === "critical"
-                          ? "var(--status-critical-bg)"
-                          : "var(--status-warning-bg)",
-                    }}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span
-                            className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5"
-                            style={{
-                              color:
-                                alert.severity === "critical"
-                                  ? "var(--status-critical)"
-                                  : "var(--status-warning)",
-                              backgroundColor:
-                                alert.severity === "critical"
-                                  ? "var(--status-critical)30"
-                                  : "var(--status-warning)30",
-                            }}
-                          >
-                            {alert.severity}
-                          </span>
-                          <span className="font-mono text-xs text-[var(--text-secondary)]">
-                            {alert.currentLevel.toFixed(1)}cm
-                          </span>
-                          <span className="font-mono text-xs text-[var(--text-muted)]">
-                            Δ {alert.changeRate >= 0 ? "+" : ""}
-                            {alert.changeRate.toFixed(2)} cm/min
-                          </span>
-                        </div>
-                        <p className="text-[var(--text-secondary)] text-xs">
-                          {alert.message}
-                        </p>
-                      </div>
-                      <span className="text-[var(--text-muted)] text-[10px] font-mono whitespace-nowrap ml-4">
-                        {new Date(alert.timestamp).toLocaleTimeString("en-US", {
-                          hour12: false,
-                        })}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {ALERT_CONFIG.telegramEnabled && (
-                <div className="mt-3 pt-3 border-t border-[var(--border-secondary)] flex items-center gap-2">
-                  <span className="status-dot nominal" />
-                  <span className="text-[var(--status-nominal)] text-xs">
-                    TELEGRAM NOTIFICATIONS ACTIVE
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* System Information Footer */}
-        <div className="mt-4 panel">
-          <div className="panel-header">SYSTEM INFORMATION</div>
-          <div className="p-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-              <div>
-                <span className="metric-label">HIGH THRESHOLD</span>
-                <p className="font-mono text-[var(--status-critical)] mt-1">
-                  {HIGH_THRESHOLD} cm
-                </p>
-              </div>
-              <div>
-                <span className="metric-label">LOW THRESHOLD</span>
-                <p className="font-mono text-[var(--status-warning)] mt-1">
-                  {LOW_THRESHOLD} cm
-                </p>
-              </div>
-              <div>
-                <span className="metric-label">ACTIVE NODES</span>
-                <p className="font-mono text-[var(--text-primary)] mt-1">
-                  {devices.length}
-                </p>
-              </div>
-              <div>
-                <span className="metric-label">PROTOCOL</span>
-                <p className="font-mono text-[var(--text-primary)] mt-1">
-                  LoRa / Supabase RT
-                </p>
-              </div>
-            </div>
-          </div>
+        {/* Quick Links */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <QuickLinkCard
+            title="View Analytics"
+            description="Detailed charts and time series data"
+            href="/analytics"
+            icon={
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
+              </svg>
+            }
+          />
+          <QuickLinkCard
+            title="View Alerts"
+            description={`${alerts?.length || 0} active alerts`}
+            href="/alerts"
+            icon={
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                />
+              </svg>
+            }
+            highlight={alerts && alerts.length > 0}
+          />
+          <QuickLinkCard
+            title="Generate Report"
+            description="Create and send reports"
+            href="/reports"
+            icon={
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+            }
+          />
         </div>
-      </MainGrid>
-    </SystemShell>
+      </PageContent>
+    </AppLayout>
+  );
+}
+
+function QuickLinkCard({
+  title,
+  description,
+  href,
+  icon,
+  highlight = false,
+}: {
+  title: string;
+  description: string;
+  href: string;
+  icon: React.ReactNode;
+  highlight?: boolean;
+}) {
+  return (
+    <a
+      href={href}
+      className={`panel p-4 flex items-center gap-4 hover:border-[var(--accent-primary)] transition-colors ${
+        highlight ? "border-[var(--status-critical)]" : ""
+      }`}
+    >
+      <div
+        className={`p-3 rounded ${
+          highlight
+            ? "bg-[var(--status-critical-bg)] text-[var(--status-critical)]"
+            : "bg-[var(--bg-tertiary)] text-[var(--text-secondary)]"
+        }`}
+      >
+        {icon}
+      </div>
+      <div>
+        <h3 className="font-semibold text-[var(--text-primary)]">{title}</h3>
+        <p className="text-sm text-[var(--text-muted)]">{description}</p>
+      </div>
+    </a>
   );
 }
