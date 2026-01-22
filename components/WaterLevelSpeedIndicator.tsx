@@ -15,10 +15,10 @@ export function WaterLevelSpeedIndicator({
 }: WaterLevelSpeedIndicatorProps) {
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
-          <div className="h-16 bg-gray-200 rounded"></div>
+      <div className="panel">
+        <div className="panel-header">RATE OF CHANGE MONITOR</div>
+        <div className="p-4">
+          <div className="h-24 bg-[var(--bg-tertiary)] animate-pulse" />
         </div>
       </div>
     );
@@ -26,134 +26,150 @@ export function WaterLevelSpeedIndicator({
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <p className="text-red-700 text-sm">Error: {error}</p>
+      <div className="panel">
+        <div className="panel-header flex items-center gap-3">
+          <span className="status-dot critical" />
+          <span>RATE OF CHANGE MONITOR — ERROR</span>
+        </div>
+        <div className="p-4">
+          <p className="text-[var(--status-critical)] text-sm font-mono">
+            {error}
+          </p>
+        </div>
       </div>
     );
   }
 
   if (!changeRate) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          📈 Water Level Speed
-        </h3>
-        <p className="text-gray-500 text-sm">
-          Insufficient data to calculate rate
-        </p>
+      <div className="panel">
+        <div className="panel-header">RATE OF CHANGE MONITOR</div>
+        <div className="p-4">
+          <p className="text-[var(--text-muted)] text-sm font-mono">
+            INSUFFICIENT DATA
+          </p>
+        </div>
       </div>
     );
   }
 
   const trendConfig = {
     rising: {
-      icon: "↑",
-      color: "text-red-600",
-      bg: "bg-red-50",
-      border: "border-red-200",
-      label: "Rising",
+      status: "critical" as const,
+      icon: "▲",
+      label: "RISING",
+      color: "var(--status-critical)",
     },
     falling: {
-      icon: "↓",
-      color: "text-blue-600",
-      bg: "bg-blue-50",
-      border: "border-blue-200",
-      label: "Falling",
+      status: "nominal" as const,
+      icon: "▼",
+      label: "FALLING",
+      color: "var(--status-info)",
     },
     stable: {
-      icon: "→",
-      color: "text-green-600",
-      bg: "bg-green-50",
-      border: "border-green-200",
-      label: "Stable",
+      status: "nominal" as const,
+      icon: "●",
+      label: "STABLE",
+      color: "var(--status-nominal)",
     },
   };
 
   const strengthConfig = {
-    slow: { label: "Slow", color: "text-gray-600", dots: 1 },
-    moderate: { label: "Moderate", color: "text-yellow-600", dots: 2 },
-    fast: { label: "Fast", color: "text-orange-600", dots: 3 },
-    rapid: { label: "Rapid", color: "text-red-600", dots: 4 },
+    slow: { label: "SLOW", bars: 1 },
+    moderate: { label: "MODERATE", bars: 2 },
+    fast: { label: "FAST", bars: 3 },
+    rapid: { label: "RAPID", bars: 4 },
   };
 
   const trend = trendConfig[changeRate.trend];
   const strength = strengthConfig[changeRate.trendStrength];
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">
-          📈 Water Level Speed
-        </h3>
-        <span className="text-xs text-gray-500">
-          Last {changeRate.timeDeltaMinutes.toFixed(1)} min
+    <div className="panel">
+      <div className="panel-header flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className={`status-dot ${trend.status}`} />
+          <span>RATE OF CHANGE MONITOR</span>
+        </div>
+        <span className="text-[var(--text-muted)] font-mono text-[10px]">
+          Δt: {changeRate.timeDeltaMinutes.toFixed(1)}min
         </span>
       </div>
 
-      {/* Main Trend Display */}
-      <div className={`${trend.bg} border ${trend.border} rounded-lg p-4 mb-4`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className={`text-4xl font-bold ${trend.color}`}>
+      <div className="p-4">
+        {/* Main Trend Display */}
+        <div className="flex items-center justify-between mb-4 pb-4 border-b border-[var(--border-secondary)]">
+          <div className="flex items-center gap-4">
+            <span
+              className="text-4xl font-bold font-mono"
+              style={{ color: trend.color }}
+            >
               {trend.icon}
             </span>
             <div>
-              <p className={`${trend.color} font-semibold text-lg`}>
+              <p
+                className="text-lg font-bold tracking-wide"
+                style={{ color: trend.color }}
+              >
                 {trend.label}
               </p>
-              <p className="text-gray-600 text-sm">
-                {Math.abs(changeRate.changeRate).toFixed(2)} cm/min
+              <p className="font-mono text-2xl font-semibold text-[var(--text-primary)]">
+                {Math.abs(changeRate.changeRate).toFixed(2)}
+                <span className="text-xs text-[var(--text-muted)] ml-1">
+                  cm/min
+                </span>
               </p>
             </div>
           </div>
 
           {/* Strength Indicator */}
           <div className="text-right">
-            <p className={`${strength.color} font-medium text-sm`}>
-              {strength.label}
-            </p>
-            <div className="flex gap-1 mt-1 justify-end">
-              {[1, 2, 3, 4].map((dot) => (
+            <p className="metric-label mb-2">{strength.label}</p>
+            <div className="flex gap-1 justify-end">
+              {[1, 2, 3, 4].map((bar) => (
                 <div
-                  key={dot}
-                  className={`w-2 h-2 rounded-full ${
-                    dot <= strength.dots
-                      ? trend.color.replace("text-", "bg-")
-                      : "bg-gray-200"
-                  }`}
+                  key={bar}
+                  className="w-2 h-6"
+                  style={{
+                    backgroundColor:
+                      bar <= strength.bars ? trend.color : "var(--bg-tertiary)",
+                    opacity: bar <= strength.bars ? 1 : 0.3,
+                  }}
                 />
               ))}
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Details Grid */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-gray-500 text-xs mb-1">Current Level</p>
-          <p className="text-lg font-bold text-gray-900">
-            {changeRate.currentLevel.toFixed(1)}{" "}
-            <span className="text-sm font-normal text-gray-500">cm</span>
-          </p>
+        {/* Level Comparison */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-[var(--bg-tertiary)] p-3 border border-[var(--border-secondary)]">
+            <p className="metric-label mb-1">CURRENT</p>
+            <p className="font-mono text-xl font-semibold text-[var(--text-primary)]">
+              {changeRate.currentLevel.toFixed(1)}
+              <span className="text-xs text-[var(--text-muted)] ml-1">cm</span>
+            </p>
+          </div>
+          <div className="bg-[var(--bg-tertiary)] p-3 border border-[var(--border-secondary)]">
+            <p className="metric-label mb-1">PREVIOUS</p>
+            <p className="font-mono text-xl font-semibold text-[var(--text-secondary)]">
+              {changeRate.previousLevel.toFixed(1)}
+              <span className="text-xs text-[var(--text-muted)] ml-1">cm</span>
+            </p>
+          </div>
         </div>
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-gray-500 text-xs mb-1">Previous Level</p>
-          <p className="text-lg font-bold text-gray-900">
-            {changeRate.previousLevel.toFixed(1)}{" "}
-            <span className="text-sm font-normal text-gray-500">cm</span>
-          </p>
-        </div>
-      </div>
 
-      {/* Change Summary */}
-      <div className="mt-4 pt-4 border-t border-gray-100">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-500">Level Change:</span>
+        {/* Delta Summary */}
+        <div className="mt-3 pt-3 border-t border-[var(--border-secondary)] flex items-center justify-between">
+          <span className="metric-label">LEVEL DELTA</span>
           <span
-            className={`font-medium ${
-              changeRate.changeRate >= 0 ? "text-red-600" : "text-blue-600"
-            }`}
+            className="font-mono font-semibold"
+            style={{
+              color:
+                changeRate.changeRate >= 0
+                  ? "var(--status-critical)"
+                  : "var(--status-info)",
+            }}
           >
             {changeRate.changeRate >= 0 ? "+" : ""}
             {(changeRate.currentLevel - changeRate.previousLevel).toFixed(2)} cm
@@ -171,25 +187,29 @@ export function SpeedIndicatorBadge({
   changeRate: WaterLevelChangeRate | null;
 }) {
   if (!changeRate) {
-    return <span className="text-gray-400 text-sm">--</span>;
+    return (
+      <span className="text-[var(--text-muted)] text-xs font-mono">--</span>
+    );
   }
 
-  const trendIcons = {
-    rising: { icon: "↑", color: "text-red-600", bg: "bg-red-100" },
-    falling: { icon: "↓", color: "text-blue-600", bg: "bg-blue-100" },
-    stable: { icon: "→", color: "text-green-600", bg: "bg-green-100" },
+  const trendConfig = {
+    rising: { icon: "▲", color: "var(--status-critical)" },
+    falling: { icon: "▼", color: "var(--status-info)" },
+    stable: { icon: "●", color: "var(--status-nominal)" },
   };
 
-  const config = trendIcons[changeRate.trend];
+  const config = trendConfig[changeRate.trend];
 
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2 py-1 rounded ${config.bg}`}
+      className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-mono"
+      style={{
+        color: config.color,
+        backgroundColor: `${config.color}20`,
+      }}
     >
-      <span className={`${config.color} font-bold`}>{config.icon}</span>
-      <span className={`${config.color} text-sm font-medium`}>
-        {Math.abs(changeRate.changeRate).toFixed(2)} cm/min
-      </span>
+      <span className="font-bold">{config.icon}</span>
+      {Math.abs(changeRate.changeRate).toFixed(2)} cm/min
     </span>
   );
 }
@@ -204,26 +224,26 @@ export function SpeedIndicatorLarge({
 }) {
   if (loading) {
     return (
-      <div className="animate-pulse flex items-center gap-2">
-        <div className="w-8 h-8 bg-gray-200 rounded"></div>
-        <div className="w-20 h-6 bg-gray-200 rounded"></div>
+      <div className="flex items-center gap-2">
+        <div className="w-6 h-6 bg-[var(--bg-tertiary)] animate-pulse" />
+        <div className="w-20 h-5 bg-[var(--bg-tertiary)] animate-pulse" />
       </div>
     );
   }
 
   if (!changeRate) {
     return (
-      <div className="flex items-center gap-2 text-gray-400">
-        <span className="text-2xl">→</span>
-        <span className="text-lg">-- cm/min</span>
+      <div className="flex items-center gap-2 text-[var(--text-muted)]">
+        <span className="text-xl font-mono">●</span>
+        <span className="text-sm font-mono">-- cm/min</span>
       </div>
     );
   }
 
   const trendConfig = {
-    rising: { icon: "↑", color: "text-red-500", animation: "animate-bounce" },
-    falling: { icon: "↓", color: "text-blue-500", animation: "" },
-    stable: { icon: "→", color: "text-green-500", animation: "" },
+    rising: { icon: "▲", color: "var(--status-critical)" },
+    falling: { icon: "▼", color: "var(--status-info)" },
+    stable: { icon: "●", color: "var(--status-nominal)" },
   };
 
   const config = trendConfig[changeRate.trend];
@@ -231,16 +251,20 @@ export function SpeedIndicatorLarge({
     changeRate.trendStrength === "rapid" || changeRate.trendStrength === "fast";
 
   return (
-    <div className={`flex items-center gap-2 ${config.color}`}>
-      <span className={`text-3xl font-bold ${isRapid ? config.animation : ""}`}>
+    <div className="flex items-center gap-2" style={{ color: config.color }}>
+      <span
+        className={`text-2xl font-bold font-mono ${
+          isRapid ? "animate-pulse" : ""
+        }`}
+      >
         {config.icon}
       </span>
-      <div>
-        <span className="text-xl font-bold">
+      <div className="font-mono">
+        <span className="text-lg font-bold">
           {changeRate.changeRate >= 0 ? "+" : ""}
           {changeRate.changeRate.toFixed(2)}
         </span>
-        <span className="text-sm ml-1">cm/min</span>
+        <span className="text-xs text-[var(--text-muted)] ml-1">cm/min</span>
       </div>
     </div>
   );

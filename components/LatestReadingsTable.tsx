@@ -13,13 +13,14 @@ export function LatestReadingsTable({
 }: LatestReadingsTableProps) {
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-lg font-semibold mb-4 text-gray-900">
-          Latest Readings
-        </h2>
-        <div className="space-y-3">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-12 bg-gray-200 rounded animate-pulse" />
+      <div className="panel">
+        <div className="panel-header">SYSTEM LOG — LATEST READINGS</div>
+        <div className="p-4">
+          {[...Array(5)].map((_, i) => (
+            <div
+              key={i}
+              className="h-10 bg-[var(--bg-tertiary)] mb-2 animate-pulse"
+            />
           ))}
         </div>
       </div>
@@ -28,56 +29,56 @@ export function LatestReadingsTable({
 
   if (!readings || readings.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-lg font-semibold mb-4 text-gray-900">
-          Latest Readings
-        </h2>
-        <p className="text-gray-500">No readings available</p>
+      <div className="panel">
+        <div className="panel-header">SYSTEM LOG — LATEST READINGS</div>
+        <div className="p-4">
+          <p className="text-[var(--text-muted)] text-sm font-mono">
+            NO READINGS AVAILABLE
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-lg font-semibold mb-4 text-gray-900">
-        Latest Readings
-      </h2>
-      <div className="overflow-x-auto">
-        <table className="w-full">
+    <div className="panel">
+      <div className="panel-header flex items-center justify-between">
+        <span>SYSTEM LOG — LATEST READINGS</span>
+        <span className="text-[var(--text-muted)] font-mono text-[10px]">
+          {readings.length} ENTRIES
+        </span>
+      </div>
+      <div className="max-h-[350px] overflow-y-auto">
+        <table className="data-table">
           <thead>
-            <tr className="border-b border-gray-200">
-              <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                Device
-              </th>
-              <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                Water Level
-              </th>
-              <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                Time
-              </th>
+            <tr>
+              <th>Node ID</th>
+              <th>Level</th>
+              <th>Timestamp</th>
             </tr>
           </thead>
           <tbody>
             {readings.map((reading) => (
-              <tr
-                key={reading.id}
-                className="border-b border-gray-100 hover:bg-gray-50"
-              >
-                <td className="py-3 px-4 text-gray-900 font-medium">
+              <tr key={reading.id}>
+                <td className="font-mono text-[var(--accent-primary)]">
                   {reading.device_id}
                 </td>
-                <td className="py-3 px-4">
-                  <span className="text-2xl font-bold text-blue-600">
+                <td>
+                  <span className="font-mono text-lg font-semibold text-[var(--text-primary)]">
                     {reading.water_level.toFixed(2)}
                   </span>
-                  <span className="text-gray-500 ml-1">cm</span>
+                  <span className="text-[var(--text-muted)] text-xs ml-1">
+                    cm
+                  </span>
                 </td>
-                <td className="py-3 px-4 text-gray-600 text-sm">
+                <td className="font-mono text-[var(--text-muted)] text-xs">
                   {new Date(reading.created_at).toLocaleString("en-US", {
                     month: "short",
-                    day: "numeric",
+                    day: "2-digit",
                     hour: "2-digit",
                     minute: "2-digit",
+                    second: "2-digit",
+                    hour12: false,
                   })}
                 </td>
               </tr>

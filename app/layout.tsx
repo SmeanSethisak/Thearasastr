@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Water Level Monitor",
-  description: "Real-time LoRa water level monitoring dashboard",
+  title: "HYDRO-MON | Water Level Command Center",
+  description: "Smart Infrastructure Water Level Monitoring & Control System",
 };
 
 export default function RootLayout({
@@ -12,7 +12,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <head>
         <link
           rel="stylesheet"
@@ -21,7 +21,9 @@ export default function RootLayout({
           crossOrigin=""
         />
       </head>
-      <body>{children}</body>
+      <body className="bg-[var(--bg-primary)] text-[var(--text-primary)] antialiased">
+        {children}
+      </body>
     </html>
   );
 }
