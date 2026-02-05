@@ -19,10 +19,10 @@ export function WaterLevelAlerts({
 }: WaterLevelAlertsProps) {
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-          <div className="h-16 bg-gray-200 rounded"></div>
+      <div className="panel">
+        <div className="panel-header">ALERT MONITOR</div>
+        <div className="p-4">
+          <div className="h-20 bg-[var(--bg-tertiary)] animate-pulse" />
         </div>
       </div>
     );
@@ -30,102 +30,151 @@ export function WaterLevelAlerts({
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <p className="text-red-700 text-sm">Error loading alerts: {error}</p>
+      <div className="panel">
+        <div className="panel-header flex items-center gap-3">
+          <span className="status-dot critical" />
+          <span>ALERT MONITOR — ERROR</span>
+        </div>
+        <div className="p-4">
+          <p className="text-[var(--status-critical)] text-sm font-mono">
+            {error}
+          </p>
+        </div>
       </div>
     );
   }
 
   const highAlerts = alerts.filter((a) => a.type === "high");
   const lowAlerts = alerts.filter((a) => a.type === "low");
+  const hasAlerts = alerts.length > 0;
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">
-          ⚠️ Water Level Alerts
-        </h3>
-        <span className="text-xs text-gray-500">Last hour</span>
-      </div>
-
-      {/* Threshold Info */}
-      <div className="flex gap-4 mb-4 text-xs">
-        <span className="px-2 py-1 bg-red-100 text-red-700 rounded">
-          High: &gt;{highThreshold}cm
-        </span>
-        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">
-          Low: &lt;{lowThreshold}cm
+    <div className="panel">
+      <div className="panel-header flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span
+            className={`status-dot ${hasAlerts ? "critical" : "nominal"}`}
+          />
+          <span>ALERT MONITOR</span>
+        </div>
+        <span className="text-[var(--text-muted)] font-mono text-[10px]">
+          LAST 60 MIN
         </span>
       </div>
 
-      {alerts.length === 0 ? (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">✅</span>
-            <div>
-              <p className="text-green-800 font-medium">All Normal</p>
-              <p className="text-green-600 text-sm">
-                Water levels are within safe thresholds
-              </p>
+      <div className="p-4">
+        {/* Threshold Info */}
+        <div className="flex gap-4 mb-4 text-[10px] font-mono">
+          <span className="text-[var(--status-critical)]">
+            HIGH THRESHOLD: {highThreshold}cm
+          </span>
+          <span className="text-[var(--status-warning)]">
+            LOW THRESHOLD: {lowThreshold}cm
+          </span>
+        </div>
+
+        {alerts.length === 0 ? (
+          <div className="bg-[var(--status-nominal-bg)] border border-[var(--status-nominal)] p-4">
+            <div className="flex items-center gap-3">
+              <span className="status-dot nominal" />
+              <div>
+                <p className="text-[var(--status-nominal)] font-semibold text-sm">
+                  ALL SYSTEMS NOMINAL
+                </p>
+                <p className="text-[var(--text-muted)] text-xs mt-1">
+                  Water levels within operational parameters
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {/* Summary */}
-          <div className="flex gap-4 mb-4">
-            {highAlerts.length > 0 && (
-              <div className="flex items-center gap-2 px-3 py-2 bg-red-100 rounded-lg">
-                <span className="text-red-600 font-bold text-lg">
-                  {highAlerts.length}
-                </span>
-                <span className="text-red-700 text-sm">High alerts</span>
-              </div>
-            )}
-            {lowAlerts.length > 0 && (
-              <div className="flex items-center gap-2 px-3 py-2 bg-blue-100 rounded-lg">
-                <span className="text-blue-600 font-bold text-lg">
-                  {lowAlerts.length}
-                </span>
-                <span className="text-blue-700 text-sm">Low alerts</span>
-              </div>
-            )}
-          </div>
+        ) : (
+          <>
+            {/* Alert Summary */}
+            <div className="flex gap-3 mb-4">
+              {highAlerts.length > 0 && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-[var(--status-critical-bg)] border border-[var(--status-critical)]">
+                  <span className="text-[var(--status-critical)] font-mono font-bold text-lg">
+                    {highAlerts.length}
+                  </span>
+                  <span className="text-[var(--status-critical)] text-xs uppercase tracking-wide">
+                    High
+                  </span>
+                </div>
+              )}
+              {lowAlerts.length > 0 && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-[var(--status-warning-bg)] border border-[var(--status-warning)]">
+                  <span className="text-[var(--status-warning)] font-mono font-bold text-lg">
+                    {lowAlerts.length}
+                  </span>
+                  <span className="text-[var(--status-warning)] text-xs uppercase tracking-wide">
+                    Low
+                  </span>
+                </div>
+              )}
+            </div>
 
-          {/* Alert List */}
-          <div className="max-h-48 overflow-y-auto space-y-2">
-            {alerts.slice(0, 10).map((alert, index) => (
-              <AlertItem key={index} alert={alert} />
-            ))}
-            {alerts.length > 10 && (
-              <p className="text-gray-500 text-sm text-center py-2">
-                +{alerts.length - 10} more alerts
-              </p>
-            )}
-          </div>
-        </div>
-      )}
+            {/* Alert List */}
+            <div className="max-h-48 overflow-y-auto space-y-2">
+              {alerts.slice(0, 10).map((alert, index) => (
+                <AlertEntry key={index} alert={alert} />
+              ))}
+              {alerts.length > 10 && (
+                <p className="text-[var(--text-muted)] text-xs text-center py-2 font-mono">
+                  +{alerts.length - 10} MORE ENTRIES
+                </p>
+              )}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
 
-function AlertItem({ alert }: { alert: AnomalyAlert }) {
+function AlertEntry({ alert }: { alert: AnomalyAlert }) {
   const isHigh = alert.type === "high";
-  const bgColor = isHigh ? "bg-red-50" : "bg-blue-50";
-  const borderColor = isHigh ? "border-red-300" : "border-blue-300";
-  const textColor = isHigh ? "text-red-800" : "text-blue-800";
-  const icon = isHigh ? "🔴" : "🔵";
+  const statusColor = isHigh
+    ? "var(--status-critical)"
+    : "var(--status-warning)";
+  const bgColor = isHigh
+    ? "var(--status-critical-bg)"
+    : "var(--status-warning-bg)";
 
   return (
     <div
-      className={`${bgColor} border ${borderColor} rounded-lg p-3 flex items-start gap-3`}
+      className="border-l-2 p-3"
+      style={{
+        borderLeftColor: statusColor,
+        backgroundColor: bgColor,
+      }}
     >
-      <span className="text-lg">{icon}</span>
-      <div className="flex-1 min-w-0">
-        <p className={`${textColor} font-medium text-sm`}>{alert.message}</p>
-        <p className="text-gray-500 text-xs mt-1">
-          {new Date(alert.timestamp).toLocaleString()}
-        </p>
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <span
+              className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5"
+              style={{
+                color: statusColor,
+                backgroundColor: `${statusColor}30`,
+              }}
+            >
+              {alert.type}
+            </span>
+            <span className="font-mono text-xs" style={{ color: statusColor }}>
+              {alert.currentLevel.toFixed(1)}cm
+            </span>
+          </div>
+          <p className="text-[var(--text-secondary)] text-xs">
+            {alert.message}
+          </p>
+        </div>
+        <span className="text-[var(--text-muted)] text-[10px] font-mono whitespace-nowrap ml-2">
+          {new Date(alert.timestamp).toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          })}
+        </span>
       </div>
     </div>
   );
@@ -143,33 +192,46 @@ export function AlertBanner({
 
   const highCount = alerts.filter((a) => a.type === "high").length;
   const lowCount = alerts.filter((a) => a.type === "low").length;
+  const isCritical = highCount > 0;
 
   return (
-    <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white px-4 py-3">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-xl animate-[pulse_3s_ease-in-out_infinite]">
-            ⚠️
-          </span>
-          <span className="font-medium">
-            {alerts.length} abnormal reading{alerts.length > 1 ? "s" : ""}{" "}
-            detected
-          </span>
-          <div className="flex gap-2 ml-2">
-            {highCount > 0 && (
-              <span className="bg-white/20 px-2 py-0.5 rounded text-sm">
-                {highCount} high
-              </span>
-            )}
-            {lowCount > 0 && (
-              <span className="bg-white/20 px-2 py-0.5 rounded text-sm">
-                {lowCount} low
-              </span>
-            )}
-          </div>
+    <div
+      className="border-b px-4 py-2 flex items-center justify-between"
+      style={{
+        backgroundColor: isCritical
+          ? "var(--status-critical-bg)"
+          : "var(--status-warning-bg)",
+        borderColor: isCritical
+          ? "var(--status-critical)"
+          : "var(--status-warning)",
+      }}
+    >
+      <div className="flex items-center gap-4">
+        <span className={`status-dot ${isCritical ? "critical" : "warning"}`} />
+        <span
+          className="text-xs font-semibold uppercase tracking-wide"
+          style={{
+            color: isCritical
+              ? "var(--status-critical)"
+              : "var(--status-warning)",
+          }}
+        >
+          {alerts.length} ALERT{alerts.length > 1 ? "S" : ""} DETECTED
+        </span>
+        <div className="flex gap-2 text-xs font-mono">
+          {highCount > 0 && (
+            <span className="text-[var(--status-critical)]">
+              {highCount} HIGH
+            </span>
+          )}
+          {lowCount > 0 && (
+            <span className="text-[var(--status-warning)]">{lowCount} LOW</span>
+          )}
         </div>
-        <span className="text-sm opacity-80">Last hour</span>
       </div>
+      <span className="text-[var(--text-muted)] text-[10px] font-mono">
+        LAST 60 MIN
+      </span>
     </div>
   );
 }

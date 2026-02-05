@@ -26,10 +26,8 @@ export default function DeviceControl({
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Derive pump mode from LED state: LED true = pump_in, LED false = pump_out/off
   const pumpMode: PumpMode = deviceState?.led ? "pump_in" : "off";
 
-  // Fetch the current device state from Supabase
   const fetchDeviceState = useCallback(async () => {
     try {
       setError(null);
@@ -40,7 +38,6 @@ export default function DeviceControl({
         .single();
 
       if (fetchError) throw fetchError;
-
       setDeviceState(data);
     } catch (err) {
       setError(
@@ -51,15 +48,11 @@ export default function DeviceControl({
     }
   }, []);
 
-  // Set pump mode by updating LED state
-  // Pump In = LED true, Pump Out/Stop = LED false
   const setPumpModeAction = async (mode: PumpMode) => {
     if (updating || !deviceState) return;
 
-    const newLedState = mode === "pump_in"; // pump_in = true, pump_out/off = false
-    
-    // Optimistic update
-    setDeviceState((prev) => prev ? { ...prev, led: newLedState } : null);
+    const newLedState = mode === "pump_in";
+    setDeviceState((prev) => (prev ? { ...prev, led: newLedState } : null));
     setUpdating(true);
     setError(null);
 
@@ -71,20 +64,17 @@ export default function DeviceControl({
 
       if (updateError) throw updateError;
     } catch (err) {
-      // Revert on error
-      setDeviceState((prev) => prev ? { ...prev, led: !newLedState } : null);
+      setDeviceState((prev) => (prev ? { ...prev, led: !newLedState } : null));
       setError(err instanceof Error ? err.message : "Failed to update pump");
     } finally {
       setUpdating(false);
     }
   };
 
-  // Initial fetch
   useEffect(() => {
     fetchDeviceState();
   }, [fetchDeviceState]);
 
-  // Set up real-time subscription for live updates
   useEffect(() => {
     const channel = supabase
       .channel("device_control_changes")
@@ -107,204 +97,211 @@ export default function DeviceControl({
     };
   }, []);
 
-  // Get status display config
-  const getStatusConfig = () => {
-    if (deviceState?.led) {
-      return {
-        bg: "bg-blue-100",
-        ring: "bg-blue-500",
-        shadow: "shadow-blue-500/50",
-        text: "text-blue-800",
-        badge: "bg-blue-100 text-blue-800",
-        icon: "💧",
-        label: "PUMPING IN",
-        description: "Adding water to irrigation system",
-      };
-    }
-    return {
-      bg: "bg-gray-100",
-      ring: "bg-gray-400",
-      shadow: "shadow-gray-400/50",
-      text: "text-gray-600",
-      badge: "bg-gray-100 text-gray-600",
-      icon: "⏸️",
-      label: "STANDBY",
-      description: "Pump system inactive",
-    };
-  };
-
-  const status = getStatusConfig();
   const isActive = deviceState?.led === true;
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
-          <div className="h-24 bg-gray-200 rounded mb-4"></div>
-          <div className="h-10 bg-gray-200 rounded"></div>
+      <div className="panel">
+        <div className="panel-header">SYSTEM CONTROL — IRRIGATION PUMP</div>
+        <div className="p-4">
+          <div className="h-32 bg-[var(--bg-tertiary)] animate-pulse" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">
-            🚰 Irrigation Pump Control
-          </h3>
-          <p className="text-gray-500 text-sm mt-1">
-            ESP32-based water pump controller
-          </p>
+    <div className="panel">
+      <div className="panel-header flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className={`status-dot ${isActive ? "nominal" : "warning"}`} />
+          <span>SYSTEM CONTROL — IRRIGATION PUMP</span>
         </div>
-        <span className="text-xs text-gray-400">
-          Polls every 2s
+        <span className="text-[var(--text-muted)] font-mono text-[10px]">
+          ESP32 CONTROLLER
         </span>
       </div>
 
-      {/* Status Display */}
-      <div className={`${status.bg} rounded-lg p-4 mb-6`}>
-        <div className="flex items-center gap-4">
-          {/* Animated Status Indicator */}
-          <div className="relative">
-            <div
-              className={`w-16 h-16 rounded-full flex items-center justify-center ${status.bg}`}
-            >
+      <div className="p-4">
+        {/* Status Display */}
+        <div
+          className="border p-4 mb-4"
+          style={{
+            borderColor: isActive
+              ? "var(--status-nominal)"
+              : "var(--border-primary)",
+            backgroundColor: isActive
+              ? "var(--status-nominal-bg)"
+              : "var(--bg-tertiary)",
+          }}
+        >
+          <div className="flex items-center gap-4">
+            {/* Status Indicator */}
+            <div className="relative">
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center"
+                style={{
+                  backgroundColor: isActive
+                    ? "var(--status-nominal)"
+                    : "var(--bg-elevated)",
+                  boxShadow: isActive
+                    ? "0 0 20px var(--status-nominal)"
+                    : "none",
+                }}
+              >
+                <span className="text-xl">{isActive ? "▶" : "■"}</span>
+              </div>
               {isActive && (
                 <div
-                  className={`absolute inset-0 rounded-full ${status.ring} animate-ping opacity-25`}
-                ></div>
+                  className="absolute inset-0 rounded-full animate-ping opacity-30"
+                  style={{ backgroundColor: "var(--status-nominal)" }}
+                />
               )}
-              <div
-                className={`w-10 h-10 rounded-full ${status.ring} ${status.shadow} shadow-lg flex items-center justify-center`}
+            </div>
+
+            {/* Status Text */}
+            <div className="flex-1">
+              <p
+                className="text-lg font-bold tracking-wider"
+                style={{
+                  color: isActive
+                    ? "var(--status-nominal)"
+                    : "var(--text-secondary)",
+                }}
               >
-                <span className="text-xl">{status.icon}</span>
-              </div>
+                {isActive ? "ACTIVE" : "STANDBY"}
+              </p>
+              <p className="text-[var(--text-muted)] text-xs">
+                {isActive
+                  ? "Pump system engaged — adding water"
+                  : "Pump system idle"}
+              </p>
             </div>
           </div>
 
-          {/* Status Text */}
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <span
-                className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold ${status.badge}`}
-              >
-                {isActive && (
-                  <span className={`w-2 h-2 ${status.ring} rounded-full animate-pulse`}></span>
-                )}
-                {status.label}
-              </span>
+          {/* Water Level Gauge */}
+          {currentWaterLevel !== undefined && (
+            <div className="mt-4 pt-4 border-t border-[var(--border-secondary)]">
+              <div className="flex items-center justify-between text-xs mb-2">
+                <span className="metric-label">WATER LEVEL</span>
+                <span className="font-mono font-semibold text-[var(--text-primary)]">
+                  {currentWaterLevel.toFixed(1)} cm
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-[var(--text-muted)] font-mono w-8">
+                  {lowThreshold}
+                </span>
+                <div className="flex-1 h-2 bg-[var(--bg-secondary)] relative">
+                  <div
+                    className="h-full transition-all duration-300"
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        Math.max(
+                          0,
+                          (currentWaterLevel / (highThreshold * 1.2)) * 100
+                        )
+                      )}%`,
+                      backgroundColor:
+                        currentWaterLevel > highThreshold
+                          ? "var(--status-critical)"
+                          : currentWaterLevel < lowThreshold
+                          ? "var(--status-warning)"
+                          : "var(--status-nominal)",
+                    }}
+                  />
+                  {/* Threshold markers */}
+                  <div
+                    className="absolute top-0 bottom-0 w-px bg-[var(--status-warning)]"
+                    style={{
+                      left: `${(lowThreshold / (highThreshold * 1.2)) * 100}%`,
+                    }}
+                  />
+                  <div
+                    className="absolute top-0 bottom-0 w-px bg-[var(--status-critical)]"
+                    style={{
+                      left: `${(highThreshold / (highThreshold * 1.2)) * 100}%`,
+                    }}
+                  />
+                </div>
+                <span className="text-[10px] text-[var(--text-muted)] font-mono w-8 text-right">
+                  {highThreshold}
+                </span>
+              </div>
             </div>
-            <p className={`${status.text} text-sm`}>{status.description}</p>
-          </div>
+          )}
         </div>
 
-        {/* Current Water Level Display (if available) */}
-        {currentWaterLevel !== undefined && (
-          <div className="mt-4 pt-4 border-t border-gray-200/50">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Current Water Level:</span>
-              <span className="font-semibold text-gray-900">
-                {currentWaterLevel.toFixed(1)} cm
-              </span>
-            </div>
-            <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
-              <span>Low: {lowThreshold} cm</span>
-              <div className="flex-1 bg-gray-200 rounded-full h-2">
-                <div
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    currentWaterLevel > highThreshold
-                      ? "bg-red-500"
-                      : currentWaterLevel < lowThreshold
-                      ? "bg-yellow-500"
-                      : "bg-green-500"
-                  }`}
-                  style={{
-                    width: `${Math.min(100, Math.max(0, (currentWaterLevel / (highThreshold * 1.2)) * 100))}%`,
-                  }}
-                />
-              </div>
-              <span>High: {highThreshold} cm</span>
-            </div>
+        {/* Control Buttons */}
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => setPumpModeAction("pump_in")}
+            disabled={updating}
+            className={`control-btn flex flex-col items-center gap-2 py-4 ${
+              isActive ? "active" : ""
+            }`}
+            style={
+              isActive
+                ? {
+                    backgroundColor: "var(--status-nominal)",
+                    borderColor: "var(--status-nominal)",
+                    color: "var(--bg-primary)",
+                  }
+                : {}
+            }
+          >
+            <span className="text-xl">▶</span>
+            <span className="text-xs font-semibold tracking-wide">
+              ENGAGE PUMP
+            </span>
+          </button>
+
+          <button
+            onClick={() => setPumpModeAction("off")}
+            disabled={updating}
+            className={`control-btn flex flex-col items-center gap-2 py-4 ${
+              !isActive ? "active" : ""
+            }`}
+            style={
+              !isActive
+                ? {
+                    backgroundColor: "var(--bg-elevated)",
+                    borderColor: "var(--text-muted)",
+                  }
+                : {}
+            }
+          >
+            <span className="text-xl">■</span>
+            <span className="text-xs font-semibold tracking-wide">
+              DISENGAGE
+            </span>
+          </button>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mt-4 p-3 border border-[var(--status-critical)] bg-[var(--status-critical-bg)]">
+            <p className="text-[var(--status-critical)] text-xs font-mono">
+              {error}
+            </p>
+            <button
+              onClick={fetchDeviceState}
+              className="mt-2 text-xs text-[var(--accent-primary)] hover:underline"
+            >
+              RETRY CONNECTION
+            </button>
+          </div>
+        )}
+
+        {/* Updating Indicator */}
+        {updating && (
+          <div className="mt-4 flex items-center justify-center gap-2 text-[var(--text-muted)] text-xs">
+            <div className="w-3 h-3 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />
+            <span className="font-mono">TRANSMITTING COMMAND...</span>
           </div>
         )}
       </div>
-
-      {/* Control Buttons */}
-      <div className="grid grid-cols-2 gap-3">
-        <button
-          onClick={() => setPumpModeAction("pump_in")}
-          disabled={updating}
-          className={`py-3 px-4 rounded-lg font-medium transition-all duration-200 flex flex-col items-center gap-1 ${
-            deviceState?.led
-              ? "bg-blue-500 text-white shadow-lg shadow-blue-500/30"
-              : updating
-              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-              : "bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200"
-          }`}
-        >
-          <span className="text-xl">💧</span>
-          <span className="text-xs">Pump In (ON)</span>
-        </button>
-
-        <button
-          onClick={() => setPumpModeAction("off")}
-          disabled={updating}
-          className={`py-3 px-4 rounded-lg font-medium transition-all duration-200 flex flex-col items-center gap-1 ${
-            !deviceState?.led
-              ? "bg-gray-500 text-white shadow-lg shadow-gray-500/30"
-              : updating
-              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-              : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
-          }`}
-        >
-          <span className="text-xl">⏹️</span>
-          <span className="text-xs">Stop (OFF)</span>
-        </button>
-      </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-700 text-center">⚠️ {error}</p>
-          <button
-            onClick={fetchDeviceState}
-            className="mt-2 w-full text-sm text-red-600 hover:underline"
-          >
-            Retry
-          </button>
-        </div>
-      )}
-
-      {/* Loading Overlay */}
-      {updating && (
-        <div className="mt-4 flex items-center justify-center gap-2 text-gray-500 text-sm">
-          <svg
-            className="animate-spin h-4 w-4"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            ></circle>
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
-          </svg>
-          Updating pump...
-        </div>
-      )}
     </div>
   );
 }

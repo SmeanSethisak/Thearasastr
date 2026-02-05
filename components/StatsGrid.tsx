@@ -6,34 +6,47 @@ interface StatCardProps {
   title: string;
   value: number | string;
   unit: string;
-  icon: string;
+  status?: "nominal" | "warning" | "critical";
   trend?: "up" | "down" | "stable";
 }
 
-export function StatCard({ title, value, unit, icon, trend }: StatCardProps) {
-  const trendColor = {
-    up: "text-red-500",
-    down: "text-green-500",
-    stable: "text-blue-500",
+function StatCard({
+  title,
+  value,
+  unit,
+  status = "nominal",
+  trend,
+}: StatCardProps) {
+  const statusColors = {
+    nominal: "border-l-[var(--status-nominal)]",
+    warning: "border-l-[var(--status-warning)]",
+    critical: "border-l-[var(--status-critical)]",
+  };
+
+  const trendIndicator = {
+    up: { icon: "▲", color: "text-[var(--status-critical)]" },
+    down: { icon: "▼", color: "text-[var(--status-info)]" },
+    stable: { icon: "●", color: "text-[var(--status-nominal)]" },
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
-      <div className="flex justify-between items-start mb-2">
-        <h3 className="text-gray-600 text-sm font-medium">{title}</h3>
-        <span className="text-2xl">{icon}</span>
-      </div>
-      <div className="flex items-baseline gap-2">
-        <span className="text-3xl font-bold text-gray-900">{value}</span>
-        <span className="text-gray-500 text-sm">{unit}</span>
-      </div>
-      {trend && (
-        <div className={`text-sm mt-2 font-medium ${trendColor[trend]}`}>
-          {trend === "up" && "↑ Rising"}
-          {trend === "down" && "↓ Falling"}
-          {trend === "stable" && "→ Stable"}
+    <div
+      className={`bg-[var(--bg-panel)] border border-[var(--border-primary)] border-l-2 ${statusColors[status]}`}
+    >
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <span className="metric-label">{title}</span>
+          {trend && (
+            <span className={`text-xs ${trendIndicator[trend].color}`}>
+              {trendIndicator[trend].icon}
+            </span>
+          )}
         </div>
-      )}
+        <div className="flex items-baseline gap-1">
+          <span className="metric-value">{value}</span>
+          <span className="metric-unit">{unit}</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -46,9 +59,12 @@ interface StatsGridProps {
 export function StatsGrid({ stats, loading }: StatsGridProps) {
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="bg-gray-200 rounded-lg h-32 animate-pulse" />
+          <div
+            key={i}
+            className="bg-[var(--bg-panel)] border border-[var(--border-primary)] h-24 animate-pulse"
+          />
         ))}
       </div>
     );
@@ -56,39 +72,38 @@ export function StatsGrid({ stats, loading }: StatsGridProps) {
 
   if (!stats) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <p className="text-gray-500 col-span-full">No data available</p>
+      <div className="bg-[var(--bg-panel)] border border-[var(--border-primary)] p-4">
+        <p className="text-[var(--text-muted)] text-sm">
+          No telemetry data available
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       <StatCard
-        title="Latest Reading"
+        title="Current Level"
         value={stats.latest.toFixed(1)}
         unit="cm"
-        icon="💧"
+        status="nominal"
       />
       <StatCard
-        title="Maximum (24h)"
+        title="Maximum"
         value={stats.max.toFixed(1)}
         unit="cm"
-        icon="📈"
         trend="up"
       />
       <StatCard
-        title="Minimum (24h)"
+        title="Minimum"
         value={stats.min.toFixed(1)}
         unit="cm"
-        icon="📉"
         trend="down"
       />
       <StatCard
-        title="Average (24h)"
+        title="Average"
         value={stats.average.toFixed(1)}
         unit="cm"
-        icon="📊"
         trend="stable"
       />
     </div>

@@ -39,22 +39,21 @@ export function WaterLevelReportCard({
       if (response.ok) {
         setTelegramStatus({
           type: "success",
-          message: "Report sent to Telegram successfully!",
+          message: "Report transmitted successfully",
         });
       } else {
         setTelegramStatus({
           type: "error",
-          message: data.error || "Failed to send report",
+          message: data.error || "Transmission failed",
         });
       }
     } catch (err) {
       setTelegramStatus({
         type: "error",
-        message: "Failed to send report to Telegram",
+        message: "Network error — transmission failed",
       });
     } finally {
       setSendingToTelegram(false);
-      // Clear status after 3 seconds
       setTimeout(() => setTelegramStatus(null), 3000);
     }
   };
@@ -76,46 +75,18 @@ export function WaterLevelReportCard({
     URL.revokeObjectURL(url);
   };
 
-  const handlePrintReport = () => {
-    if (!report) return;
-
-    const printWindow = window.open("", "_blank");
-    if (printWindow) {
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Water Level Report - ${report.deviceId}</title>
-            <style>
-              body { font-family: Arial, sans-serif; padding: 20px; }
-              h1 { color: #1e40af; }
-              h2 { color: #374151; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; }
-              .stat { margin: 10px 0; }
-              .alert-high { color: #dc2626; background: #fef2f2; padding: 8px; border-radius: 4px; margin: 4px 0; }
-              .alert-low { color: #2563eb; background: #eff6ff; padding: 8px; border-radius: 4px; margin: 4px 0; }
-              table { border-collapse: collapse; width: 100%; margin: 16px 0; }
-              th, td { border: 1px solid #e5e7eb; padding: 12px; text-align: left; }
-              th { background: #f9fafb; }
-            </style>
-          </head>
-          <body>
-            ${generateReportHTML(report)}
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
-    }
-  };
-
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+      <div className="panel">
+        <div className="panel-header">REPORT GENERATOR</div>
+        <div className="p-4">
           <div className="space-y-3">
-            <div className="h-4 bg-gray-200 rounded w-full"></div>
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+            {[...Array(4)].map((_, i) => (
+              <div
+                key={i}
+                className="h-4 bg-[var(--bg-tertiary)] animate-pulse"
+              />
+            ))}
           </div>
         </div>
       </div>
@@ -124,19 +95,29 @@ export function WaterLevelReportCard({
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <p className="text-red-700 text-sm">Error generating report: {error}</p>
+      <div className="panel">
+        <div className="panel-header flex items-center gap-3">
+          <span className="status-dot critical" />
+          <span>REPORT GENERATOR — ERROR</span>
+        </div>
+        <div className="p-4">
+          <p className="text-[var(--status-critical)] text-sm font-mono">
+            {error}
+          </p>
+        </div>
       </div>
     );
   }
 
   if (!report) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          📋 Water Level Report
-        </h3>
-        <p className="text-gray-500">No data available for report</p>
+      <div className="panel">
+        <div className="panel-header">REPORT GENERATOR</div>
+        <div className="p-4">
+          <p className="text-[var(--text-muted)] text-sm font-mono">
+            INSUFFICIENT DATA FOR REPORT
+          </p>
+        </div>
       </div>
     );
   }
@@ -145,162 +126,168 @@ export function WaterLevelReportCard({
   const lowAlerts = report.alerts.filter((a) => a.type === "low");
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">
-          📋 Water Level Report
-        </h3>
+    <div className="panel">
+      <div className="panel-header flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="status-dot nominal" />
+          <span>REPORT GENERATOR</span>
+        </div>
         <div className="flex gap-2">
           <button
             onClick={handleSendToTelegram}
             disabled={sendingToTelegram}
-            className="px-3 py-1.5 text-sm bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="control-btn text-[10px] py-1 px-3 flex items-center gap-1.5"
           >
             {sendingToTelegram ? (
               <>
-                <span className="animate-spin">⏳</span> Sending...
+                <div className="w-2 h-2 border border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />
+                SENDING
               </>
             ) : (
-              <>📤 Telegram</>
+              <>TRANSMIT</>
             )}
           </button>
           <button
             onClick={handleDownloadReport}
-            className="px-3 py-1.5 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-1"
+            className="control-btn text-[10px] py-1 px-3"
           >
-            📥 Download
-          </button>
-          <button
-            onClick={handlePrintReport}
-            className="px-3 py-1.5 text-sm bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-1"
-          >
-            🖨️ Print
+            EXPORT
           </button>
         </div>
       </div>
 
-      {/* Telegram Status Message */}
-      {telegramStatus && (
-        <div
-          className={`mb-4 p-3 rounded-lg text-sm ${
-            telegramStatus.type === "success"
-              ? "bg-green-50 text-green-700 border border-green-200"
-              : "bg-red-50 text-red-700 border border-red-200"
-          }`}
-        >
-          {telegramStatus.type === "success" ? "✅" : "❌"}{" "}
-          {telegramStatus.message}
-        </div>
-      )}
-
-      {/* Report Header */}
-      <div className="bg-gray-50 rounded-lg p-4 mb-6">
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="text-gray-500">Device ID:</span>
-            <span className="ml-2 font-medium text-gray-900">
-              {report.deviceId}
-            </span>
-          </div>
-          <div>
-            <span className="text-gray-500">Period:</span>
-            <span className="ml-2 font-medium text-gray-900">
-              {report.period}
-            </span>
-          </div>
-          <div className="col-span-2">
-            <span className="text-gray-500">Generated:</span>
-            <span className="ml-2 font-medium text-gray-900">
-              {new Date(report.generatedAt).toLocaleString()}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Statistics Summary */}
-      <div className="mb-6">
-        <h4 className="text-sm font-semibold text-gray-700 mb-3">
-          📊 Statistics Summary
-        </h4>
-        <div className="grid grid-cols-4 gap-3">
-          <StatBox label="Latest" value={report.latest} color="blue" />
-          <StatBox label="Maximum" value={report.max} color="red" />
-          <StatBox label="Minimum" value={report.min} color="green" />
-          <StatBox label="Average" value={report.average} color="purple" />
-        </div>
-      </div>
-
-      {/* Time Period Averages */}
-      <div className="mb-6">
-        <h4 className="text-sm font-semibold text-gray-700 mb-3">
-          🕐 Time Period Averages
-        </h4>
-        <div className="grid grid-cols-4 gap-3">
-          <AverageBox
-            label="1 Hour"
-            value={report.timePeriodAverages.last1hour}
-          />
-          <AverageBox
-            label="6 Hours"
-            value={report.timePeriodAverages.last6hours}
-          />
-          <AverageBox
-            label="12 Hours"
-            value={report.timePeriodAverages.last12hours}
-          />
-          <AverageBox
-            label="24 Hours"
-            value={report.timePeriodAverages.last24hours}
-          />
-        </div>
-      </div>
-
-      {/* Alerts Summary */}
-      <div>
-        <h4 className="text-sm font-semibold text-gray-700 mb-3">
-          ⚠️ Alerts Summary
-        </h4>
-        {report.alerts.length === 0 ? (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-green-700 text-sm">
-            ✅ No abnormal readings detected during this period
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <div className="flex gap-4">
-              {highAlerts.length > 0 && (
-                <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium">
-                  🔴 {highAlerts.length} High Level Alert
-                  {highAlerts.length > 1 ? "s" : ""}
-                </span>
-              )}
-              {lowAlerts.length > 0 && (
-                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                  🔵 {lowAlerts.length} Low Level Alert
-                  {lowAlerts.length > 1 ? "s" : ""}
-                </span>
-              )}
-            </div>
-            <div className="max-h-32 overflow-y-auto mt-2 space-y-1">
-              {report.alerts.slice(0, 5).map((alert, i) => (
-                <div
-                  key={i}
-                  className={`text-xs p-2 rounded ${
-                    alert.type === "high"
-                      ? "bg-red-50 text-red-700"
-                      : "bg-blue-50 text-blue-700"
-                  }`}
-                >
-                  {alert.message} - {new Date(alert.timestamp).toLocaleString()}
-                </div>
-              ))}
-              {report.alerts.length > 5 && (
-                <p className="text-gray-500 text-xs">
-                  +{report.alerts.length - 5} more alerts
-                </p>
-              )}
-            </div>
+      <div className="p-4">
+        {/* Telegram Status */}
+        {telegramStatus && (
+          <div
+            className="mb-4 p-2 border text-xs font-mono"
+            style={{
+              borderColor:
+                telegramStatus.type === "success"
+                  ? "var(--status-nominal)"
+                  : "var(--status-critical)",
+              backgroundColor:
+                telegramStatus.type === "success"
+                  ? "var(--status-nominal-bg)"
+                  : "var(--status-critical-bg)",
+              color:
+                telegramStatus.type === "success"
+                  ? "var(--status-nominal)"
+                  : "var(--status-critical)",
+            }}
+          >
+            {telegramStatus.type === "success" ? "✓" : "✗"}{" "}
+            {telegramStatus.message}
           </div>
         )}
+
+        {/* Report Header */}
+        <div className="bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] p-3 mb-4">
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <span className="text-[var(--text-muted)]">NODE:</span>
+              <span className="ml-2 font-mono text-[var(--accent-primary)]">
+                {report.deviceId}
+              </span>
+            </div>
+            <div>
+              <span className="text-[var(--text-muted)]">PERIOD:</span>
+              <span className="ml-2 font-mono text-[var(--text-primary)]">
+                {report.period}
+              </span>
+            </div>
+            <div className="col-span-2">
+              <span className="text-[var(--text-muted)]">GENERATED:</span>
+              <span className="ml-2 font-mono text-[var(--text-primary)]">
+                {new Date(report.generatedAt).toLocaleString("en-US", {
+                  hour12: false,
+                })}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Statistics Grid */}
+        <div className="mb-4">
+          <p className="metric-label mb-2">STATISTICS SUMMARY</p>
+          <div className="grid grid-cols-4 gap-2">
+            <StatBox label="LATEST" value={report.latest} />
+            <StatBox label="MAX" value={report.max} status="critical" />
+            <StatBox label="MIN" value={report.min} status="info" />
+            <StatBox label="AVG" value={report.average} />
+          </div>
+        </div>
+
+        {/* Time Period Averages */}
+        <div className="mb-4">
+          <p className="metric-label mb-2">TIME PERIOD AVERAGES</p>
+          <div className="grid grid-cols-4 gap-2">
+            <AvgBox label="1H" value={report.timePeriodAverages.last1hour} />
+            <AvgBox label="6H" value={report.timePeriodAverages.last6hours} />
+            <AvgBox label="12H" value={report.timePeriodAverages.last12hours} />
+            <AvgBox label="24H" value={report.timePeriodAverages.last24hours} />
+          </div>
+        </div>
+
+        {/* Alerts Summary */}
+        <div>
+          <p className="metric-label mb-2">ALERTS SUMMARY</p>
+          {report.alerts.length === 0 ? (
+            <div className="bg-[var(--status-nominal-bg)] border border-[var(--status-nominal)] p-3">
+              <p className="text-[var(--status-nominal)] text-xs font-mono">
+                ✓ NO ANOMALIES DETECTED
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex gap-3">
+                {highAlerts.length > 0 && (
+                  <span className="text-xs font-mono px-2 py-1 bg-[var(--status-critical-bg)] text-[var(--status-critical)] border border-[var(--status-critical)]">
+                    {highAlerts.length} HIGH
+                  </span>
+                )}
+                {lowAlerts.length > 0 && (
+                  <span className="text-xs font-mono px-2 py-1 bg-[var(--status-warning-bg)] text-[var(--status-warning)] border border-[var(--status-warning)]">
+                    {lowAlerts.length} LOW
+                  </span>
+                )}
+              </div>
+              <div className="max-h-24 overflow-y-auto space-y-1">
+                {report.alerts.slice(0, 5).map((alert, i) => (
+                  <div
+                    key={i}
+                    className="text-[10px] p-2 font-mono border-l-2"
+                    style={{
+                      borderLeftColor:
+                        alert.type === "high"
+                          ? "var(--status-critical)"
+                          : "var(--status-warning)",
+                      backgroundColor:
+                        alert.type === "high"
+                          ? "var(--status-critical-bg)"
+                          : "var(--status-warning-bg)",
+                      color:
+                        alert.type === "high"
+                          ? "var(--status-critical)"
+                          : "var(--status-warning)",
+                    }}
+                  >
+                    [{alert.type.toUpperCase()}] {alert.currentLevel.toFixed(1)}
+                    cm @{" "}
+                    {new Date(alert.timestamp).toLocaleTimeString("en-US", {
+                      hour12: false,
+                    })}
+                  </div>
+                ))}
+                {report.alerts.length > 5 && (
+                  <p className="text-[var(--text-muted)] text-[10px] font-mono">
+                    +{report.alerts.length - 5} MORE ENTRIES
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -309,186 +296,113 @@ export function WaterLevelReportCard({
 function StatBox({
   label,
   value,
-  color,
+  status,
 }: {
   label: string;
   value: number;
-  color: string;
+  status?: "critical" | "info";
 }) {
-  const colorClasses: Record<string, string> = {
-    blue: "bg-blue-50 text-blue-700 border-blue-200",
-    red: "bg-red-50 text-red-700 border-red-200",
-    green: "bg-green-50 text-green-700 border-green-200",
-    purple: "bg-purple-50 text-purple-700 border-purple-200",
-  };
-
+  const color =
+    status === "critical"
+      ? "var(--status-critical)"
+      : status === "info"
+      ? "var(--status-info)"
+      : "var(--text-primary)";
   return (
-    <div className={`${colorClasses[color]} border rounded-lg p-3 text-center`}>
-      <div className="text-xs text-gray-500 mb-1">{label}</div>
-      <div className="text-lg font-bold">{value.toFixed(1)}</div>
-      <div className="text-xs">cm</div>
+    <div className="bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] p-2 text-center">
+      <p className="text-[9px] text-[var(--text-muted)] mb-1">{label}</p>
+      <p className="font-mono text-sm font-semibold" style={{ color }}>
+        {value.toFixed(1)}
+      </p>
     </div>
   );
 }
 
-function AverageBox({ label, value }: { label: string; value: number }) {
+function AvgBox({ label, value }: { label: string; value: number }) {
   return (
-    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-center">
-      <div className="text-xs text-gray-500 mb-1">{label}</div>
-      <div className="text-lg font-bold text-gray-900">
+    <div className="bg-[var(--bg-tertiary)] border border-[var(--border-secondary)] p-2 text-center">
+      <p className="text-[9px] text-[var(--text-muted)] mb-1">{label}</p>
+      <p className="font-mono text-sm font-semibold text-[var(--text-primary)]">
         {value > 0 ? value.toFixed(1) : "—"}
-      </div>
-      {value > 0 && <div className="text-xs text-gray-500">cm</div>}
+      </p>
     </div>
   );
 }
 
 function generateReportText(report: WaterLevelReport): string {
   const lines = [
-    "═══════════════════════════════════════════════════════════",
-    "              WATER LEVEL MONITORING REPORT",
-    "═══════════════════════════════════════════════════════════",
+    "════════════════════════════════════════════════════════════",
+    "              HYDRO-MON WATER LEVEL REPORT",
+    "════════════════════════════════════════════════════════════",
     "",
-    `Device ID:    ${report.deviceId}`,
-    `Period:       ${report.period}`,
-    `Generated:    ${new Date(report.generatedAt).toLocaleString()}`,
+    `NODE ID:      ${report.deviceId}`,
+    `PERIOD:       ${report.period}`,
+    `GENERATED:    ${new Date(report.generatedAt).toLocaleString()}`,
     "",
-    "───────────────────────────────────────────────────────────",
+    "────────────────────────────────────────────────────────────",
     "                    STATISTICS SUMMARY",
-    "───────────────────────────────────────────────────────────",
+    "────────────────────────────────────────────────────────────",
     "",
-    `  Latest Reading:   ${report.latest.toFixed(1)} cm`,
-    `  Maximum:          ${report.max.toFixed(1)} cm`,
-    `  Minimum:          ${report.min.toFixed(1)} cm`,
-    `  Average:          ${report.average.toFixed(1)} cm`,
+    `  LATEST:     ${report.latest.toFixed(1)} cm`,
+    `  MAXIMUM:    ${report.max.toFixed(1)} cm`,
+    `  MINIMUM:    ${report.min.toFixed(1)} cm`,
+    `  AVERAGE:    ${report.average.toFixed(1)} cm`,
     "",
-    "───────────────────────────────────────────────────────────",
+    "────────────────────────────────────────────────────────────",
     "                  TIME PERIOD AVERAGES",
-    "───────────────────────────────────────────────────────────",
+    "────────────────────────────────────────────────────────────",
     "",
-    `  Last 1 Hour:      ${
+    `  1 HOUR:     ${
       report.timePeriodAverages.last1hour > 0
         ? report.timePeriodAverages.last1hour.toFixed(1) + " cm"
-        : "No data"
+        : "N/A"
     }`,
-    `  Last 6 Hours:     ${
+    `  6 HOURS:    ${
       report.timePeriodAverages.last6hours > 0
         ? report.timePeriodAverages.last6hours.toFixed(1) + " cm"
-        : "No data"
+        : "N/A"
     }`,
-    `  Last 12 Hours:    ${
+    `  12 HOURS:   ${
       report.timePeriodAverages.last12hours > 0
         ? report.timePeriodAverages.last12hours.toFixed(1) + " cm"
-        : "No data"
+        : "N/A"
     }`,
-    `  Last 24 Hours:    ${
+    `  24 HOURS:   ${
       report.timePeriodAverages.last24hours > 0
         ? report.timePeriodAverages.last24hours.toFixed(1) + " cm"
-        : "No data"
+        : "N/A"
     }`,
     "",
-    "───────────────────────────────────────────────────────────",
+    "────────────────────────────────────────────────────────────",
     "                    ALERTS SUMMARY",
-    "───────────────────────────────────────────────────────────",
+    "────────────────────────────────────────────────────────────",
     "",
   ];
 
   if (report.alerts.length === 0) {
-    lines.push("  ✓ No abnormal readings detected during this period");
+    lines.push("  [OK] No anomalies detected");
   } else {
     const highAlerts = report.alerts.filter((a) => a.type === "high");
     const lowAlerts = report.alerts.filter((a) => a.type === "low");
 
-    lines.push(`  Total Alerts: ${report.alerts.length}`);
-    lines.push(`  High Level Alerts: ${highAlerts.length}`);
-    lines.push(`  Low Level Alerts: ${lowAlerts.length}`);
+    lines.push(`  TOTAL:      ${report.alerts.length}`);
+    lines.push(`  HIGH:       ${highAlerts.length}`);
+    lines.push(`  LOW:        ${lowAlerts.length}`);
     lines.push("");
-    lines.push("  Alert Details:");
     report.alerts.forEach((alert, i) => {
       lines.push(
-        `    ${i + 1}. [${alert.type.toUpperCase()}] ${alert.message}`
+        `  ${i + 1}. [${alert.type.toUpperCase()}] ${alert.currentLevel.toFixed(
+          1
+        )}cm`
       );
-      lines.push(`       Time: ${new Date(alert.timestamp).toLocaleString()}`);
+      lines.push(`     ${new Date(alert.timestamp).toLocaleString()}`);
     });
   }
 
   lines.push("");
-  lines.push("═══════════════════════════════════════════════════════════");
-  lines.push("                    END OF REPORT");
-  lines.push("═══════════════════════════════════════════════════════════");
+  lines.push("════════════════════════════════════════════════════════════");
+  lines.push("                     END OF REPORT");
+  lines.push("════════════════════════════════════════════════════════════");
 
   return lines.join("\n");
-}
-
-function generateReportHTML(report: WaterLevelReport): string {
-  const highAlerts = report.alerts.filter((a) => a.type === "high");
-  const lowAlerts = report.alerts.filter((a) => a.type === "low");
-
-  return `
-    <h1>🌊 Water Level Monitoring Report</h1>
-    
-    <h2>Report Information</h2>
-    <p><strong>Device ID:</strong> ${report.deviceId}</p>
-    <p><strong>Period:</strong> ${report.period}</p>
-    <p><strong>Generated:</strong> ${new Date(
-      report.generatedAt
-    ).toLocaleString()}</p>
-    
-    <h2>Statistics Summary</h2>
-    <table>
-      <tr><th>Metric</th><th>Value</th></tr>
-      <tr><td>Latest Reading</td><td>${report.latest.toFixed(1)} cm</td></tr>
-      <tr><td>Maximum</td><td>${report.max.toFixed(1)} cm</td></tr>
-      <tr><td>Minimum</td><td>${report.min.toFixed(1)} cm</td></tr>
-      <tr><td>Average</td><td>${report.average.toFixed(1)} cm</td></tr>
-    </table>
-    
-    <h2>Time Period Averages</h2>
-    <table>
-      <tr><th>Period</th><th>Average</th></tr>
-      <tr><td>Last 1 Hour</td><td>${
-        report.timePeriodAverages.last1hour > 0
-          ? report.timePeriodAverages.last1hour.toFixed(1) + " cm"
-          : "No data"
-      }</td></tr>
-      <tr><td>Last 6 Hours</td><td>${
-        report.timePeriodAverages.last6hours > 0
-          ? report.timePeriodAverages.last6hours.toFixed(1) + " cm"
-          : "No data"
-      }</td></tr>
-      <tr><td>Last 12 Hours</td><td>${
-        report.timePeriodAverages.last12hours > 0
-          ? report.timePeriodAverages.last12hours.toFixed(1) + " cm"
-          : "No data"
-      }</td></tr>
-      <tr><td>Last 24 Hours</td><td>${
-        report.timePeriodAverages.last24hours > 0
-          ? report.timePeriodAverages.last24hours.toFixed(1) + " cm"
-          : "No data"
-      }</td></tr>
-    </table>
-    
-    <h2>Alerts Summary</h2>
-    ${
-      report.alerts.length === 0
-        ? '<p style="color: green;">✅ No abnormal readings detected during this period</p>'
-        : `
-        <p><strong>Total Alerts:</strong> ${report.alerts.length} (${
-            highAlerts.length
-          } high, ${lowAlerts.length} low)</p>
-        ${report.alerts
-          .map(
-            (alert) => `
-          <div class="alert-${alert.type}">
-            <strong>${alert.type === "high" ? "🔴 HIGH" : "🔵 LOW"}:</strong> ${
-              alert.message
-            }<br>
-            <small>Time: ${new Date(alert.timestamp).toLocaleString()}</small>
-          </div>
-        `
-          )
-          .join("")}
-      `
-    }
-  `;
 }
